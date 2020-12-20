@@ -7,6 +7,7 @@ using Mediapipe;
 using UnityEngine;
 
 using Directory = System.IO.Directory;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class SceneDirector : MonoBehaviour {
   [SerializeField] bool useGPU = true;
@@ -175,6 +176,8 @@ public class SceneDirector : MonoBehaviour {
 
     graph.StartRun().AssertOk();
 
+    var stopwatch = new Stopwatch();
+
     while (true) {
       yield return new WaitForEndOfFrame();
 
@@ -183,15 +186,24 @@ public class SceneDirector : MonoBehaviour {
         break;
       }
 
+      stopwatch.Restart();
+
       var nextFrameRequest = webCamScreenController.RequestNextFrame();
       yield return nextFrameRequest;
 
       var nextFrame = nextFrameRequest.textureFrame;
 
       graph.PushInput(nextFrame).AssertOk();
+      Debug.Log($"Pushed ({stopwatch.Elapsed.Milliseconds}ms elapsed)");
       graph.RenderOutput(webCamScreenController, nextFrame);
+      Debug.Log($"Rendered ({stopwatch.Elapsed.Milliseconds}ms elapsed)");
 
       webCamScreenController.OnReleaseFrame(nextFrame);
+
+      stopwatch.Stop();
+
+      var elapsed = stopwatch.Elapsed.Milliseconds;
+      Debug.Log($"{elapsed}ms elapsed (FPS = {1000 / elapsed})");
     }
   }
 }
